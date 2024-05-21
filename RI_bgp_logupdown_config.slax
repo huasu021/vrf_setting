@@ -1,0 +1,49 @@
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+
+import "../import/junos.xsl";
+
+
+
+var $command = <command> "show bgp neighbor";
+var $data1 = jcs:invoke($command);
+var $RI_name = $data1/bgp-peer/peer-cfg-rti[. != "master"];
+match / {
+  <op-script-results> {
+
+        var $configuration = <configuration> {
+                <routing-instances> {
+                    for $a ($RI_name) {
+                        <instance> {
+                            <name> $a;
+                            <protocols> {
+                                <bgp> {
+                                    <log-updown>;
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+
+    var $connection = jcs:open();
+    var $results := { call jcs:load-configuration( $connection, $configuration ); }
+    var $close-results = jcs:close($connection);
+    if ($results//xnm:error) {
+        for-each ($results//xnm:error) {
+            <output> message;
+        }
+    }
+    if ($results//xnm:warning) {
+        for-each ($results//xnm:warning) {
+            <output> message;
+        }
+    }
+    <output> $configuration;
+
+   }
+}

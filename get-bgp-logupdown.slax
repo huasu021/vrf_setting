@@ -1,0 +1,28 @@
+/*
+* /routing-instances/instance/protocols/bgp/group
+*/
+
+version 1.0;
+
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns ext = "http://xmlsoft.org/XSLT/namespace";
+
+import "../import/junos.xsl";
+
+var $config-rpc = <get-configuration inherit="inherit">;
+
+var $data1 = jcs:invoke( $config-rpc );
+match / {
+  <op-script-results> {
+  for-each ( $data1/routing-instances/instance ) {
+    if( jcs:empty (./protocols/bgp/group)) {
+      <output> "routing-instances: " _ ./name _ " has no bgp";
+    }
+    else {
+      <output> "set routing-instances " _ ./name _ " protocols bgp group " _ ./protocols/bgp/group/name _ " log-updown";
+    }
+  }
+  }
+}
